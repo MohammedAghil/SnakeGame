@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <title>Bootstrap Example</title>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <style>
+      .pixel{
+          background-color: black;
+      }
+      .board-row{
+          background-color: aqua;
+          width:100%;
+          flex-direction: row;
+          display: flex;
+      }
+
+      #root{
+
+      }
+
+  </style>
+</head>
+<body>
+    <div id="root">
+
+    </div>
+
+
+
+<script>
+const root = document.getElementById('root');
+const boardSize = 10; //so it means 10 pixels in each row wise and 10 rows like that, so 100 pixels of 'pixelSize' in total
+const pixelSize = 50; //in px
+const colorCodes = {
+    'board' : 'black',
+    'snake' : 'green',
+    'food'   : 'red'
+};
+
+class Pixel{
+    constructor(size,color='black'){
+        this.size = size;
+        this.color = color;
+        this.pixel = document.createElement('div');
+        this.pixel.classList.add('pixel');
+        this.pixel.style.height = pixelSize.toLocaleString()+"px";
+        this.pixel.style.width = pixelSize.toLocaleString()+"px";
+    }
+
+    setPixelColor(color){ //I will just say snake color, board color and it will take values from dictionary and apply it.
+        this.color = colorCodes[color];
+        this.pixel.style.backgroundColor = this.color;
+    }
+
+    getPixelColor(){
+        return colorCodes[this.color]; //returns whether it is occupied by snake or food or board
+    }
+
+    getPixel(){
+        return this.pixel;
+    }
+}
+
+class Board{
+    constructor(size){
+        this.size = size;
+        this.matrix = [];
+    }
+
+    createBoard() {
+        for (let i = 0; i < this.size; i++) {
+            this.matrix[i] = [];
+            for(let j = 0 ; j<this.size;j++){
+                const pixel = new Pixel(pixelSize)
+                this.matrix[i][j]=  pixel;
+            }
+        }
+    }
+
+    displayBoard(){
+        const board = document.createElement('div');
+        let boardSizeInPx = (boardSize*pixelSize).toString() + "px";
+         for(let i=0;i<this.size; i++){
+            const row = document.createElement('div');
+            row.classList.add('board-row');
+            row.style.width = boardSizeInPx;
+            for(let j=0;j<this.size; j++){
+            row.appendChild(this.matrix[i][j].getPixel());
+            }
+            root.appendChild(row);
+        }
+    }
+
+    setColoratLocation(i,j,color){
+        this.matrix[i][j].setPixelColor(color);
+    }
+
+    getColoratLocation(i,j,color){
+        this.matrix[i][j].getPixelColor(color);
+    }
+
+    getPixel(i,j){
+        return this.matrix[i][j];
+    }
+}
+
+class Game{
+    constructor(board){
+        this.previousStates = [];
+        this.index = 0;
+        this.board = board;
+        this.direction = 'up';
+        this.row = 3;
+        this.col = 3;
+    }
+
+    setDirection(s){
+        opposites = {
+            'left':'right',
+            'right':'left',
+            'up':'down',
+            'down':'up'
+        }
+        //check for opposites which cannot be allowed
+        
+        this.direction = s;
+    }
+
+    keepRunning(){
+        console.log(this.direction);
+        this.move();
+        this.clearTrail();
+    }
+    clearTrail(){
+        if(this.previousStates.length>0){
+            console.log(this.previousStates)
+            this.previousStates[this.index].setPixelColor('board');
+            this.index+=1;
+        }
+        
+    }
+
+    move(){
+        //keep moving in the current direction and clear trail in each move
+        this.previousStates.push(this.board.getPixel(this.row,this.col));
+        if(this.direction=='right'){
+            this.col= (this.col + 1) % boardSize;
+        }
+        else if(this.direction=='left'){
+            this.col = (this.col-1 + boardSize) %boardSize;
+        }
+        else if(this.direction=='down'){
+            this.row= (this.row+1) %boardSize;
+        }
+        else{
+            this.row= (this.row-1+boardSize) %boardSize;
+        }
+        board.setColoratLocation(this.row,this.col,'snake');
+    }
+}
+
+const board = new Board(boardSize);
+board.createBoard();
+board.displayBoard();
+
+board.setColoratLocation(0,4,'food');
+
+const game = new Game(board);
+
+setInterval(function(){ 
+    //code goes here that will be run every 5 seconds.    
+    game.keepRunning();
+
+    //console.log('hello');
+}, 300);
+
+
+
+document.onkeydown = checkKey;
+
+function checkKey(e) {
+
+    e = e || window.event;
+    console.log(game.direction);
+
+    if (e.keyCode == '38') {
+        game.direction = 'up';
+        // up arrow
+    }
+    else if (e.keyCode == '40') {
+        game.direction = 'down';
+        // down arrow
+    }
+    else if (e.keyCode == '37') {
+        game.direction = 'left';
+       // left arrow
+    }
+    else if (e.keyCode == '39') {
+        game.direction = 'right';
+       // right arrow
+    }
+
+}
+</script>
+</body>
+</html>
