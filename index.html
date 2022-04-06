@@ -30,12 +30,19 @@
 
 <script>
 const root = document.getElementById('root');
-const boardSize = 10; //so it means 10 pixels in each row wise and 10 rows like that, so 100 pixels of 'pixelSize' in total
-const pixelSize = 50; //in px
+const pixelSize = 50; //as a factor
+const boardWidth = Math.floor(screen.availWidth/pixelSize);
+const boardHieght = Math.floor(screen.availHeight/pixelSize);
+
+
+let gameRunning = true;
 const colorCodes = {
     'board' : 'black',
     'snake' : 'green',
-    'food'   : 'red'
+    'food'   : 'red',
+    'black':'board',
+    'green':'snake',
+    'red':'food'
 };
 
 class Pixel{
@@ -57,36 +64,55 @@ class Pixel{
         return colorCodes[this.color]; //returns whether it is occupied by snake or food or board
     }
 
-    getPixel(){
+    getPixelDOMElement(){
         return this.pixel;
     }
 }
 
 class Board{
-    constructor(size){
-        this.size = size;
+    constructor(){
+        this.scoreBoard = null;
         this.matrix = [];
     }
 
     createBoard() {
-        for (let i = 0; i < this.size; i++) {
+        for (let i = 0; i < boardHieght; i++) {
             this.matrix[i] = [];
-            for(let j = 0 ; j<this.size;j++){
+            for(let j = 0 ; j<boardWidth;j++){
                 const pixel = new Pixel(pixelSize)
                 this.matrix[i][j]=  pixel;
             }
         }
     }
 
+    createScoreBoard(){
+        if (this.scoreBoard==null){
+        this.scoreBoard = document.createElement('div');
+        const scoreText = document.createElement('h2');
+        scoreText.id = 'scoreText';
+        scoreText.innerText = 'Score : 0';
+        this.scoreBoard.appendChild(scoreText);
+        root.appendChild(this.scoreBoard);
+        }
+    }
+
+    setScoreBoardText(score){
+        if (this.scoreBoard==null)
+        {
+            this.createScoreBoard();
+        }
+        document.getElementById('scoreText').innerText = 'Score : '+ score.toString();
+    }
+
     displayBoard(){
         const board = document.createElement('div');
-        let boardSizeInPx = (boardSize*pixelSize).toString() + "px";
-         for(let i=0;i<this.size; i++){
+        console.log(boardWidth,boardHieght);
+         for(let i=0;i<boardHieght; i++){
             const row = document.createElement('div');
             row.classList.add('board-row');
-            row.style.width = boardSizeInPx;
-            for(let j=0;j<this.size; j++){
-            row.appendChild(this.matrix[i][j].getPixel());
+            row.style.width = '100%';
+            for(let j=0;j<boardWidth; j++){
+            row.appendChild(this.matrix[i][j].getPixelDOMElement());
             }
             root.appendChild(row);
         }
@@ -96,8 +122,8 @@ class Board{
         this.matrix[i][j].setPixelColor(color);
     }
 
-    getColoratLocation(i,j,color){
-        this.matrix[i][j].getPixelColor(color);
+    getColoratLocation(i,j){
+        return this.matrix[i][j].getPixelColor();
     }
 
     getPixel(i,j){
@@ -107,24 +133,28 @@ class Board{
 
 class Game{
     constructor(board){
+        this.score = 0;
         this.previousStates = [];
         this.index = 0;
         this.board = board;
         this.direction = 'up';
         this.row = 3;
         this.col = 3;
+        this.generateFood();
     }
 
-    setDirection(s){
-        opposites = {
+    setDirection(direction){
+        let opposites = {
             'left':'right',
             'right':'left',
             'up':'down',
             'down':'up'
         }
         //check for opposites which cannot be allowed
+        if(opposites[this.direction]!=direction){
+            this.direction = direction;
+        }
         
-        this.direction = s;
     }
 
     keepRunning(){
@@ -134,73 +164,97 @@ class Game{
     }
     clearTrail(){
         if(this.previousStates.length>0){
-            console.log(this.previousStates)
+            //console.log(this.previousStates)
             this.previousStates[this.index].setPixelColor('board');
             this.index+=1;
         }
-        
+    }
+
+    generateFood(){
+        let x = Math.floor(Math.random() * boardHieght);
+        let y = Math.floor(Math.random() * boardWidth);
+        while (this.board.getColoratLocation(x,y)=='snake' || (x==this.row && y==this.col)){
+            x = Math.floor(Math.random() * boardHieght);
+            y = Math.floor(Math.random() * boardWidth);
+        }
+        this.board.setColoratLocation(x,y,'food');
+    }
+
+    checkFoodEaten(){
+        if (this.board.getColoratLocation(this.row,this.col)=='food'){
+            console.log('food eaten');
+            this.score+=1;
+            this.board.setScoreBoardText(this.score);
+            this.index-=1;
+            this.generateFood();
+        }
+        else if(this.board.getColoratLocation(this.row,this.col)=='snake'){
+            console.log('Game Over');
+            gameRunning=false;
+        }
     }
 
     move(){
         //keep moving in the current direction and clear trail in each move
         this.previousStates.push(this.board.getPixel(this.row,this.col));
         if(this.direction=='right'){
-            this.col= (this.col + 1) % boardSize;
+            this.col= (this.col + 1) % boardWidth;
         }
         else if(this.direction=='left'){
-            this.col = (this.col-1 + boardSize) %boardSize;
+            this.col = (this.col-1 + boardWidth) %boardWidth;
         }
         else if(this.direction=='down'){
-            this.row= (this.row+1) %boardSize;
+            this.row= (this.row+1) %boardHieght;
         }
         else{
-            this.row= (this.row-1+boardSize) %boardSize;
+            this.row= (this.row-1+boardHieght) %boardHieght;
         }
+        this.checkFoodEaten();
         board.setColoratLocation(this.row,this.col,'snake');
+        
     }
 }
 
-const board = new Board(boardSize);
+const board = new Board();
+let keyPressed = 'right';
+//board.createScoreBoard();
 board.createBoard();
 board.displayBoard();
-
-board.setColoratLocation(0,4,'food');
-
 const game = new Game(board);
 
 setInterval(function(){ 
-    //code goes here that will be run every 5 seconds.    
-    game.keepRunning();
-
-    //console.log('hello');
+    //code goes here that will be run every x seconds. 
+    if(gameRunning){
+        game.setDirection(keyPressed);
+        game.keepRunning();
+    }   
 }, 300);
 
 
-
+//Key Detection For Arrow Keys
 document.onkeydown = checkKey;
 
 function checkKey(e) {
 
     e = e || window.event;
-    console.log(game.direction);
+    //console.log(game.direction);
 
     if (e.keyCode == '38') {
-        game.direction = 'up';
+        keyPressed = 'up';
         // up arrow
     }
     else if (e.keyCode == '40') {
-        game.direction = 'down';
+        keyPressed = 'down';
         // down arrow
     }
     else if (e.keyCode == '37') {
-        game.direction = 'left';
+        keyPressed = 'left';
        // left arrow
     }
     else if (e.keyCode == '39') {
-        game.direction = 'right';
+       keyPressed = 'right';
        // right arrow
     }
-
 }
 </script>
 </body>
