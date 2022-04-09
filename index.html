@@ -1,7 +1,7 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <title>Bootstrap Example</title>
+  <title>Classic Snake</title>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <style>
@@ -13,6 +13,15 @@
           width:100%;
           flex-direction: row;
           display: flex;
+      }
+      body{
+          background-color: black;
+          color: white;
+      }
+
+      #scoreBoard{
+          background-color: black;
+          color: white;
       }
 
       #root{
@@ -217,7 +226,7 @@ class Game{
 
 const board = new Board();
 let keyPressed = 'right';
-//board.createScoreBoard();
+board.createScoreBoard();
 board.createBoard();
 board.displayBoard();
 const game = new Game(board);
